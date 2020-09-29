@@ -18,7 +18,7 @@ def format_date(dtext):
     day, month, year = date.split('/')
     if time != "":
         hours, minutes, seconds = time.split(':')
-        if (meridiem == "PM"):
+        if (meridiem == "PM" and int(hours) < 12):
             hours = str(int(hours) + 12)
         return f'{year}-{pad(month)}-{pad(day)} {pad(hours)}:{pad(minutes)}:{pad(seconds)}'
     return f'{year}-{pad(month)}-{pad(day)}'
