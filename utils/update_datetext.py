@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 
 import dataset
 
@@ -18,21 +18,23 @@ def format_date(dtext):
     day, month, year = date.split('/')
     if time != "":
         hours, minutes, seconds = time.split(':')
-        if (meridiem == "PM" and int(hours) < 12):
+        if meridiem == "PM" and int(hours) < 12:
             hours = str(int(hours) + 12)
+        if meridiem == "AM" and int(hours) == 12:
+            hours = str(0)
         return f'{year}-{pad(month)}-{pad(day)} {pad(hours)}:{pad(minutes)}:{pad(seconds)}'
     return f'{year}-{pad(month)}-{pad(day)}'
 
 
 db = dataset.connect('sqlite:///to_convert.sqlite')
 
-table = db['PointData']
-for row in table.all():
-    result = format_date(row['timestamp'])
-    #  print(row)
-    # updated = row.copy()
-    # updated['timestamp'] = result
-    row_update = dict(id=row['id'], timestamp=result)
-    table.update(row_update, ['id'])
-    #  print(row)
-    #  print(result)
+to_update = []
+for row in db['PointData'].all():
+    if int(row['id']) > 10:
+        result = format_date(row['timestamp'])
+        to_update.append(dict(id=row['id'], timestamp=result))
+
+for row in to_update:
+    query = f"UPDATE PointData SET timestamp = '{row['timestamp']}' WHERE id = {row['id']};"
+    #  print(query)
+    db.query(query)
