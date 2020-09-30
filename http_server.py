@@ -71,7 +71,7 @@ def main(argv):
             print_usage(0)
         elif opt in ("-s", "--start-date"):
             day, month, year = value.split('-')
-            ServerTime['start'] = datetime(int(year), int(month), int(day))
+            ServerTime['start'] = datetime(int(year), int(month), int(day), 8)
             ServerTime['delta'] = datetime.now() - ServerTime['start']
     server_time = datetime.now() - ServerTime['delta']
     print(f'System date and time is {server_time}')
