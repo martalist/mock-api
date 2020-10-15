@@ -36,14 +36,19 @@ def date_str(dt):
 
 @app.route('/', methods=['GET'])
 def server():
+    # process timespan parameter
     timespan = int(request.args.get('timespan', '10'))
     upper_bound = datetime.now() - ServerTime['delta']
     lower_bound = upper_bound - timedelta(minutes=timespan)
 
+    # process craftid parameter
+    craft_id = float(request.args.get('craftid')) if request.args.get('craftid') else None
+    vessel_filter = "" if craft_id == None else f' AND craft_id = {craft_id}'
+
     # query the database
     query = 'SELECT * FROM PointData ' \
             f'WHERE datetime(timestamp) >= datetime(\'{date_str(lower_bound)}\') ' \
-            f'AND datetime(timestamp) <= datetime(\'{date_str(upper_bound)}\');'
+            f'AND datetime(timestamp) <= datetime(\'{date_str(upper_bound)}\'){vessel_filter};'
     results = db.query(query)
 
     # filter out the sqlite id - we don't need that
@@ -71,7 +76,7 @@ def main(argv):
             print_usage(0)
         elif opt in ("-s", "--start-date"):
             day, month, year = value.split('-')
-            ServerTime['start'] = datetime(int(year), int(month), int(day), 8)
+            ServerTime['start'] = datetime(int(year), int(month), int(day))
             ServerTime['delta'] = datetime.now() - ServerTime['start']
     server_time = datetime.now() - ServerTime['delta']
     print(f'System date and time is {server_time}')
