@@ -13,7 +13,8 @@ import dataset
 # Since this is historic data, the server's time must be in the past
 # The default is 2 years ago, and can be changed using the -s or --start-date 
 # command line argument.
-ServerTime = { 'delta': timedelta(days=730), 'start': datetime.now() - timedelta(days=730) }
+now = datetime.now()
+ServerTime = { 'server_start': now - timedelta(days=730), 'actual_start': now, 'playback_speed': 1 }
 
 # Connect to the database once for the lifetime of the server
 db = dataset.connect('sqlite:///maritimeData2018.sqlite')
@@ -38,7 +39,8 @@ def date_str(dt):
 def server():
     # process timespan parameter
     timespan = int(request.args.get('timespan', '10'))
-    upper_bound = datetime.now() - ServerTime['delta']
+    elapsed_since_start = (datetime.now() - ServerTime['actual_start']) * ServerTime['playback_speed']
+    upper_bound = ServerTime['server_start'] + elapsed_since_start
     lower_bound = upper_bound - timedelta(minutes=timespan)
 
     # process craftid parameter
@@ -60,7 +62,7 @@ def server():
 
 # helper method to print program usage
 def print_usage(exit_code):
-    print("usage: http_server.py [(-s | --start-date) DD-MM-YYYY]")
+    print("usage: http_server.py [(-s | --start-date) DD-MM-YYYY, (-p | --playback-speed) 1.0]")
     sys.exit(exit_code)
 
 
@@ -68,7 +70,7 @@ def print_usage(exit_code):
 def main(argv):
     # parse command line arguments
     try:
-        opts, args = getopt.getopt(argv, "hs:", ["--start-date="])
+        opts, args = getopt.getopt(argv, "hs:p:", ["--start-date=", "--playback-speed="])
     except getopt.GetoptError:
         print_usage(2)
     for opt, value in opts:
@@ -76,10 +78,11 @@ def main(argv):
             print_usage(0)
         elif opt in ("-s", "--start-date"):
             day, month, year = value.split('-')
-            ServerTime['start'] = datetime(int(year), int(month), int(day))
-            ServerTime['delta'] = datetime.now() - ServerTime['start']
-    server_time = datetime.now() - ServerTime['delta']
-    print(f'System date and time is {server_time}')
+            ServerTime['actual_start'] = datetime.now()
+            ServerTime['server_start'] = datetime(int(year), int(month), int(day))
+        elif opt in ("-p", "--playback-speed"):
+            ServerTime['playback_speed'] = float(value)
+    print(f'System date and time is {ServerTime["server_start"]}')
 
     # run the server
     app.run(host='localhost', port=5000)
